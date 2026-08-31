@@ -10,8 +10,8 @@ subscriptions, and the partnership revenue ledger.
 static assets, with the Hono API running as a Pages Function on the same origin.
 **D1** for data, **R2** for files, **Workers AI** for generation.
 
-> The GitHub repository is still named `teacheasy`. Renaming it changes the URL,
-> so it is left alone until you ask.
+> Repository: <https://github.com/Ndobal/kamdova>. The local working directory
+> is still `Projects/teacheasy`; renaming it is cosmetic and safe to do whenever.
 
 ---
 
