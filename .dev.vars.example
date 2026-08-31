@@ -2,3 +2,7 @@
 # Generate each with:  node -e "console.log(crypto.randomUUID()+crypto.randomUUID())"
 JWT_ACCESS_SECRET="replace-with-a-long-random-string"
 JWT_REFRESH_SECRET="replace-with-a-different-long-random-string"
+
+# Modules 4-6: AI lesson generation. Without it the generate endpoints return a
+# clear 422 and everything else still works.
+ANTHROPIC_API_KEY="sk-ant-..."

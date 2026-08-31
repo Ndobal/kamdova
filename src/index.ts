@@ -14,6 +14,11 @@ import { adminAuditRoutes } from './routes/admin/audit';
 import { adminRoleRoutes } from './routes/admin/roles';
 import { adminSettingsRoutes } from './routes/admin/settings';
 import { adminUserRoutes } from './routes/admin/users';
+import { lessonRoutes } from './routes/lessons';
+import { noteRoutes } from './routes/notes';
+import { publicRoutes } from './routes/public';
+import { referenceRoutes, teacherRoutes } from './routes/teachers';
+import { templateRoutes } from './routes/templates';
 
 const app = new Hono<App>();
 
@@ -52,6 +57,10 @@ app.get('/api/health', (c) =>
 app.route('/api/auth', authRoutes);
 app.route('/api/bootstrap', bootstrapRoutes);
 
+// The read-only student page. Deliberately unauthenticated -- access is proved
+// by an unguessable, revocable, expiring share slug rather than a session.
+app.route('/', publicRoutes);
+
 // ---- authenticated ---------------------------------------------------------
 app.route('/api/me', meRoutes);
 
@@ -67,6 +76,11 @@ app.use('/api/admin/*', requireAuth);
 app.use('/api/partners/*', requireAuth);
 app.use('/api/partnership-groups/*', requireAuth);
 app.use('/api/agreements/*', requireAuth);
+app.use('/api/teachers/*', requireAuth);
+app.use('/api/lessons/*', requireAuth);
+app.use('/api/notes/*', requireAuth);
+app.use('/api/templates/*', requireAuth);
+app.use('/api/reference/*', requireAuth);
 
 app.route('/api/admin/users', adminUserRoutes);
 app.route('/api/admin/roles', adminRoleRoutes);
@@ -76,6 +90,11 @@ app.route('/api/admin/approvals', adminApprovalRoutes);
 app.route('/api/partners', partnerRoutes);
 app.route('/api/partnership-groups', partnershipGroupRoutes);
 app.route('/api/agreements', agreementRoutes);
+app.route('/api/teachers', teacherRoutes);
+app.route('/api/lessons', lessonRoutes);
+app.route('/api/notes', noteRoutes);
+app.route('/api/templates', templateRoutes);
+app.route('/api/reference', referenceRoutes);
 
 app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'No such endpoint.' } }, 404));
 

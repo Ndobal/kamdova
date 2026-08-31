@@ -32,6 +32,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { key: 'reports',    label: 'Reports',               icon: 'bar_chart',  route: '/admin/reports',    permissions: ['reports.read', 'reports.financial.read'] },
   { key: 'approvals',  label: 'Approvals',             icon: 'task_alt',   route: '/admin/approvals',  permissions: ['approvals.read'] },
   { key: 'audit',      label: 'Audit Logs',            icon: 'history',    route: '/admin/audit',      permissions: ['audit.read'] },
+  { key: 'templates',  label: 'Lesson Templates',      icon: 'dashboard_customize', route: '/admin/templates', permissions: ['templates.read'] },
   { key: 'settings',   label: 'Settings',              icon: 'settings',   route: '/admin/settings',   permissions: ['settings.read'] },
 ];
 
@@ -55,10 +56,13 @@ const PARTNER_NAV: NavItem[] = [
   { key: 'profile',      label: 'Profile',             icon: 'person',     route: '/partner/profile' },
 ];
 
-// Placeholders so the client has a home to land on. Modules 4-9 fill these in.
 const TEACHER_NAV: NavItem[] = [
-  { key: 'overview', label: 'Overview', icon: 'dashboard', route: '/teacher' },
-  { key: 'profile',  label: 'Profile',  icon: 'person',    route: '/teacher/profile' },
+  { key: 'overview',  label: 'Overview',       icon: 'dashboard',   route: '/teacher' },
+  { key: 'lessons',   label: 'My Lessons',     icon: 'menu_book',   route: '/teacher/lessons',   permissions: ['teacher.self.lessons.read'] },
+  { key: 'create',    label: 'Create Lesson',  icon: 'add_circle',  route: '/teacher/lessons/new', permissions: ['teacher.self.lessons.write'] },
+  { key: 'notes',     label: 'Student Notes',  icon: 'description', route: '/teacher/student-notes', permissions: ['teacher.self.lessons.read'] },
+  { key: 'templates', label: 'Templates',      icon: 'dashboard_customize', route: '/teacher/templates', permissions: ['templates.read'] },
+  { key: 'profile',   label: 'Profile',        icon: 'person',      route: '/teacher/profile',   permissions: ['teacher.self.profile.read'] },
 ];
 
 const STUDENT_NAV: NavItem[] = [

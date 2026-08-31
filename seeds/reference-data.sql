@@ -76,7 +76,21 @@ INSERT OR IGNORE INTO permissions (id, code, name, description, category, is_sen
   ('perm_self_agree_read',   'partner.self.agreements.read', 'View own agreements',       'View agreements this partner is party to.', 'PARTNER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   ('perm_self_agree_decide', 'partner.self.agreements.decide','Accept or reject formula', 'Record acceptance of a sharing formula.',    'PARTNER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   ('perm_self_revenue',      'partner.self.revenue.read',    'View own share',            'View own revenue share and distributions.', 'PARTNER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  ('perm_self_statements',   'partner.self.statements.read', 'View own statements',       'View own payout statements.',               'PARTNER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now'));
+  ('perm_self_statements',   'partner.self.statements.read', 'View own statements',       'View own payout statements.',               'PARTNER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  -- Modules 4-6. Templates are readable by anyone who writes lessons; changing
+  -- one rewrites what the AI produces for every teacher, so that is sensitive.
+  ('perm_templates_read',    'templates.read',    'View lesson templates', 'View the lesson note templates.',            'TEMPLATES', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('perm_templates_manage',  'templates.manage',  'Manage lesson templates','Create and edit lesson note templates.',    'TEMPLATES', 1, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  -- Self-scoped teacher permissions. A teacher never receives teachers.read or
+  -- content.read, so one teacher can never list or open another's lessons.
+  ('perm_self_t_profile_r',  'teacher.self.profile.read',    'View own teacher profile',   'View own teaching profile.',            'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('perm_self_t_profile_w',  'teacher.self.profile.update',  'Edit own teacher profile',   'Edit own profile, subjects and classes.','TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('perm_self_lessons_r',    'teacher.self.lessons.read',    'View own lessons',           'View own lessons and notes.',           'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('perm_self_lessons_w',    'teacher.self.lessons.write',   'Create and edit own lessons','Create, edit and delete own lessons.',  'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('perm_self_lessons_gen',  'teacher.self.lessons.generate','Generate lesson content',    'Use AI to generate notes. Costs money per call.', 'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('perm_self_lessons_pub',  'teacher.self.lessons.publish', 'Publish and share notes',    'Publish notes and create share links.', 'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now'));
 
 -- ------------------------------------------------------ role defaults ----
 -- Rebuilt on every seed run so the catalog above stays the single source of
@@ -88,7 +102,7 @@ DELETE FROM role_permissions WHERE role_id IN
 -- but the rows are written so the admin UI can render the grid truthfully.
 INSERT INTO role_permissions (role_id, permission_id, created_at)
   SELECT 'role_super_admin', id, strftime('%Y-%m-%dT%H:%M:%fZ','now')
-  FROM permissions WHERE category <> 'PARTNER_SELF';
+  FROM permissions WHERE category NOT IN ('PARTNER_SELF','TEACHER_SELF');
 
 -- Deputy Super Admin: a read-heavy baseline only. Real duties ("manage
 -- teachers", "review content", "view financial reports") are handed to an
@@ -97,15 +111,22 @@ INSERT INTO role_permissions (role_id, permission_id, created_at)
   SELECT 'role_deputy_super_admin', id, strftime('%Y-%m-%dT%H:%M:%fZ','now')
   FROM permissions WHERE code IN (
     'users.read','teachers.read','students.read','content.read',
-    'partners.read','agreements.read','reports.read','audit.read','approvals.read'
+    'partners.read','agreements.read','reports.read','audit.read','approvals.read',
+    'templates.read'
   );
 
 INSERT INTO role_permissions (role_id, permission_id, created_at)
   SELECT 'role_partner', id, strftime('%Y-%m-%dT%H:%M:%fZ','now')
   FROM permissions WHERE category = 'PARTNER_SELF';
 
--- TEACHER and STUDENT intentionally carry no permissions at the foundation
--- stage; Modules 4-9 add their own as those surfaces are built.
+-- Teachers get the self-scoped family plus template reading. Nothing here
+-- reaches another teacher's work.
+INSERT INTO role_permissions (role_id, permission_id, created_at)
+  SELECT 'role_teacher', id, strftime('%Y-%m-%dT%H:%M:%fZ','now')
+  FROM permissions WHERE category = 'TEACHER_SELF' OR code = 'templates.read';
+
+-- STUDENT still carries no permissions: learners reach published notes through
+-- share links today, and Modules 8-9 add entitlement-based access.
 
 -- ------------------------------------------------- revenue categories ----
 INSERT OR IGNORE INTO revenue_categories (id, code, name, description, sort_order, created_at, updated_at) VALUES

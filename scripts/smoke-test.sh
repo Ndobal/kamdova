@@ -40,7 +40,9 @@ check "wrong password is rejected" "$CODE" "401"
 
 get /api/me "$ADMIN" >/dev/null
 check "dashboard routes to /admin" "$(j 'o.data.dashboard.home' < /tmp/body)" "/admin"
-check "super admin holds every non-self permission" "$(j 'o.data.permissions.length' < /tmp/body)" "37"
+# 50 permissions less the two self-scoped families (5 partner, 6 teacher):
+# a Super Admin administers those areas rather than holding a self grant.
+check "super admin holds every non-self permission" "$(j 'o.data.permissions.length' < /tmp/body)" "39"
 
 echo "== 3. Unauthenticated access is denied by default =="
 check "admin users list needs a session" "$(get /api/admin/users)" "401"

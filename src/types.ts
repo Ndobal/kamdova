@@ -15,6 +15,14 @@ export interface EnvBindings {
   PASSWORD_HASH_ITERATIONS: string;
   MAX_FAILED_LOGINS: string;
   ACCOUNT_LOCK_MINUTES: string;
+
+  // Modules 4-6. AI generation degrades to a clear 422 when the key is absent
+  // rather than failing at the provider, so a deployment without it still runs.
+  ANTHROPIC_API_KEY?: string;
+  AI_MODEL?: string;
+  USD_TO_NGN?: string;
+  /** Origin used to build share links; falls back to the request origin. */
+  PUBLIC_BASE_URL?: string;
 }
 
 /** Resolved once per request by requireAuth and read by every handler after it. */

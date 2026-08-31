@@ -9,3 +9,4 @@ dist/
 .env.*
 .DS_Store
 coverage/
+.tmp-seed-note.sql
