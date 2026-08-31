@@ -1,0 +1,37 @@
+name = "teacheasy"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "teacheasy-db"
+database_id = "__D1_DB_ID__"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "teacheasy-files"
+
+# Non-secret defaults. Secrets (JWT_ACCESS_SECRET, JWT_REFRESH_SECRET) come from
+# .dev.vars locally and `wrangler secret put` in production -- never from here.
+[vars]
+ENVIRONMENT = "development"
+CORS_ORIGIN = "http://localhost:5173"
+COOKIE_SECURE = "false"
+COOKIE_DOMAIN = ""
+ACCESS_TOKEN_TTL_SECONDS = "900"
+REFRESH_TOKEN_TTL_SECONDS = "2592000"
+PASSWORD_HASH_ITERATIONS = "100000"
+MAX_FAILED_LOGINS = "5"
+ACCOUNT_LOCK_MINUTES = "15"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+CORS_ORIGIN = "https://teacheasy.pages.dev"
+COOKIE_SECURE = "true"
+COOKIE_DOMAIN = ""
+ACCESS_TOKEN_TTL_SECONDS = "900"
+REFRESH_TOKEN_TTL_SECONDS = "2592000"
+PASSWORD_HASH_ITERATIONS = "100000"
+MAX_FAILED_LOGINS = "5"
+ACCOUNT_LOCK_MINUTES = "15"

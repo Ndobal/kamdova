@@ -1,0 +1,28 @@
+{
+  "name": "teacheasy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "db:create": "wrangler d1 create teacheasy-db",
+    "db:migrate": "wrangler d1 migrations apply teacheasy-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply teacheasy-db --remote",
+    "db:seed": "wrangler d1 execute teacheasy-db --local --file=./seeds/reference-data.sql",
+    "db:seed:remote": "wrangler d1 execute teacheasy-db --remote --file=./seeds/reference-data.sql",
+    "db:reset": "rm -rf .wrangler/state/v3/d1 && npm run db:migrate && npm run db:seed",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^3.99.0"
+  }
+}
