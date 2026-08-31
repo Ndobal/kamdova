@@ -11,8 +11,8 @@
     "db:create": "wrangler d1 create teacheasy-db",
     "db:migrate": "wrangler d1 migrations apply teacheasy-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply teacheasy-db --remote",
-    "db:seed": "wrangler d1 execute teacheasy-db --local --file=./seeds/reference-data.sql",
-    "db:seed:remote": "wrangler d1 execute teacheasy-db --remote --file=./seeds/reference-data.sql",
+    "db:seed": "wrangler d1 execute teacheasy-db --local --file=./seeds/reference-data.sql && wrangler d1 execute teacheasy-db --local --file=./seeds/teaching-reference.sql && wrangler d1 execute teacheasy-db --local --file=./seeds/commerce-reference.sql && wrangler d1 execute teacheasy-db --local --file=./seeds/brand-reference.sql",
+    "db:seed:remote": "wrangler d1 execute teacheasy-db --remote --file=./seeds/reference-data.sql && wrangler d1 execute teacheasy-db --remote --file=./seeds/teaching-reference.sql && wrangler d1 execute teacheasy-db --remote --file=./seeds/commerce-reference.sql && wrangler d1 execute teacheasy-db --remote --file=./seeds/brand-reference.sql",
     "db:reset": "rm -rf .wrangler/state/v3/d1 && npm run db:migrate && npm run db:seed",
     "test": "vitest run"
   },

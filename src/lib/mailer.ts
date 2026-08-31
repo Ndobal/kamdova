@@ -31,11 +31,11 @@ export async function sendEmail(env: EnvBindings, message: OutboundEmail): Promi
 }
 
 export const verificationEmail = (token: string): Omit<OutboundEmail, 'to'> => ({
-  subject: 'Verify your TeachEasy account',
-  body: `Welcome to TeachEasy.\n\nVerification code: ${token}\n\nThis code expires in 24 hours.`,
+  subject: 'Verify your KamDova account',
+  body: `Welcome to KamDova.\n\nVerification code: ${token}\n\nThis code expires in 24 hours.`,
 });
 
 export const passwordResetEmail = (token: string): Omit<OutboundEmail, 'to'> => ({
-  subject: 'Reset your TeachEasy password',
+  subject: 'Reset your KamDova password',
   body: `A password reset was requested for your account.\n\nReset code: ${token}\n\nThis code expires in 1 hour. If this was not you, you can ignore this message.`,
 });

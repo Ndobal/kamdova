@@ -23,6 +23,8 @@ export interface EnvBindings {
   USD_TO_NGN?: string;
   /** Origin used to build share links; falls back to the request origin. */
   PUBLIC_BASE_URL?: string;
+  /** Keys the device-id HMAC. Falls back to JWT_REFRESH_SECRET if unset. */
+  DEVICE_HASH_SECRET?: string;
 }
 
 /** Resolved once per request by requireAuth and read by every handler after it. */
@@ -40,6 +42,8 @@ export interface AuthContext {
 export interface AppVariables {
   auth: AuthContext;
   requestId: string;
+  /** Set by requireGenerationAllowance; read after a successful generation. */
+  entitlement?: import('./lib/entitlements').Entitlement;
 }
 
 export type App = { Bindings: EnvBindings; Variables: AppVariables };

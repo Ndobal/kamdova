@@ -15,7 +15,7 @@ export const teacherRoutes = new Hono<App>();
  * they open the teacher area. Creating it lazily here avoids a migration that
  * would have to guess which existing users are teachers.
  */
-async function ensureTeacher(db: D1Database, userId: string) {
+export async function ensureTeacher(db: D1Database, userId: string) {
   const existing = await db.prepare(`SELECT * FROM teachers WHERE user_id = ?`).bind(userId).first();
   if (existing) return existing;
 

@@ -96,7 +96,7 @@ noteRoutes.get('/:kind/:id/export', requirePermission('teacher.self.lessons.read
     return c.html(toHtml(structure, content, {
       title,
       heading: table === 'lesson_notes' ? 'Lesson Note' : 'Student Notes',
-      footer: 'Generated with TeachEasy',
+      footer: 'Created with KamDova',
     }));
   }
   throw badRequest('Format must be "markdown" or "html".', { supported: ['markdown', 'html'] });

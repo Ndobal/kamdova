@@ -76,6 +76,12 @@ get /api/lessons "$T" >/dev/null
 ck "owner sees their own two" "$(j 'o.data.length' </tmp/b)" "2"
 ck "reviewer with content.read may read" "$(get /api/lessons/$L "$AD")" "200"
 
+echo "== Billing gates before the AI is ever called =="
+# Correct order: no plan means no provider call, so no spend. Only once the
+# teacher is entitled does the missing-API-key path come into play.
+ck "no plan means no generation" "$(post POST /api/lessons/$L/generate "$T" '{}')" "403"
+post POST /api/billing/trial "$T" '{"deviceId":"teach-test-device","platform":"ANDROID"}' >/dev/null
+
 echo "== Generation degrades cleanly with no API key =="
 ck "generate returns 422, not a crash" "$(post POST /api/lessons/$L/generate "$T" '{}')" "422"
 ck "and names the missing secret" "$(j 'o.error.message.includes("ANTHROPIC_API_KEY")' </tmp/b)" "true"

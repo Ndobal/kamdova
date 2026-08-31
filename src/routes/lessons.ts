@@ -4,8 +4,10 @@ import type { App, AuthContext } from '../types';
 import { audit } from '../lib/audit';
 import { badRequest, forbidden, notFound, ok, paginated, readPagination, routeParam } from '../lib/http';
 import { newId } from '../lib/crypto';
+import { consumeGeneration, refundGeneration, requireGenerationAllowance } from '../lib/entitlements';
 import { generateLessonNote, generateStudentNote, type LessonRow } from '../lib/generation';
 import { hasPermission, requirePermission } from '../lib/rbac';
+import { ensureTeacher } from './teachers';
 import { nowIso } from '../lib/time';
 import { readJson, Validator } from '../lib/validate';
 
@@ -147,11 +149,15 @@ lessonRoutes.post('/', requirePermission('teacher.self.lessons.write'), async (c
   const objectives = v.array<string>('objectives');
   v.assert();
 
+  // The teacher row is an internal detail; someone holding the TEACHER role
+  // should not be blocked from their first lesson because they have not opened
+  // the profile screen yet.
+  await ensureTeacher(c.env.DB, auth.userId);
   const teacher = await c.env.DB
     .prepare(`SELECT user_id, school_name, default_template_id, status FROM teachers WHERE user_id = ?`)
     .bind(auth.userId)
     .first<{ user_id: string; school_name: string | null; default_template_id: string | null; status: string }>();
-  if (!teacher) throw badRequest('Set up your teacher profile before creating a lesson.');
+  if (!teacher) throw badRequest('Could not set up your teacher profile.');
   if (teacher.status === 'SUSPENDED') throw forbidden('Your teacher account is suspended.');
 
   // Resolve the reference rows when codes are given, but keep the free-text
@@ -276,16 +282,28 @@ lessonRoutes.delete('/:id', requirePermission('teacher.self.lessons.write'), asy
  * scale. If generation grows past the request budget, the lesson status column
  * already models the async states a queue would need.
  */
-lessonRoutes.post('/:id/generate', requirePermission('teacher.self.lessons.generate'), async (c) => {
+lessonRoutes.post('/:id/generate', requirePermission('teacher.self.lessons.generate'),
+  requireGenerationAllowance(), async (c) => {
   const auth = c.get('auth');
   const id = routeParam(c, 'id');
   const lesson = await loadLesson(c, id, 'write');
 
-  const result = await generateLessonNote({
-    db: c.env.DB, env: c.env, lesson,
-    teacherName: await teacherName(c.env.DB, lesson.teacher_id),
-    requestedBy: auth.userId,
-  });
+  // The slot is booked before the call and handed back if it fails, so a
+  // provider error never costs the teacher one of their lesson plans.
+  const booked = await consumeGeneration(c.env.DB, c.env, auth.userId);
+  if (!booked.canGenerate) throw forbidden('You have no lesson plans left for this period.', { entitlement: booked });
+
+  let result;
+  try {
+    result = await generateLessonNote({
+      db: c.env.DB, env: c.env, lesson,
+      teacherName: await teacherName(c.env.DB, lesson.teacher_id),
+      requestedBy: auth.userId,
+    });
+  } catch (error) {
+    if (booked.periodStart) await refundGeneration(c.env.DB, auth.userId, booked.periodStart);
+    throw error;
+  }
 
   await audit(c, {
     action: 'lesson.note_generated', entityType: 'lesson', entityId: id,
@@ -296,20 +314,31 @@ lessonRoutes.post('/:id/generate', requirePermission('teacher.self.lessons.gener
   return ok(c, {
     noteId: result.noteId, version: result.version, kind: 'TEACHER_NOTE',
     usage: result.usage,
+    allowance: { remaining: booked.quotaRemaining, limit: booked.quotaLimit, periodEnd: booked.periodEnd },
   }, 201);
 });
 
 /** Module 6: AI writes the student notes, from the teacher's note. */
-lessonRoutes.post('/:id/generate-student-notes', requirePermission('teacher.self.lessons.generate'), async (c) => {
+lessonRoutes.post('/:id/generate-student-notes', requirePermission('teacher.self.lessons.generate'),
+  requireGenerationAllowance(), async (c) => {
   const auth = c.get('auth');
   const id = routeParam(c, 'id');
   const lesson = await loadLesson(c, id, 'write');
 
-  const result = await generateStudentNote({
-    db: c.env.DB, env: c.env, lesson,
-    teacherName: await teacherName(c.env.DB, lesson.teacher_id),
-    requestedBy: auth.userId,
-  });
+  const booked = await consumeGeneration(c.env.DB, c.env, auth.userId);
+  if (!booked.canGenerate) throw forbidden('You have no lesson plans left for this period.', { entitlement: booked });
+
+  let result;
+  try {
+    result = await generateStudentNote({
+      db: c.env.DB, env: c.env, lesson,
+      teacherName: await teacherName(c.env.DB, lesson.teacher_id),
+      requestedBy: auth.userId,
+    });
+  } catch (error) {
+    if (booked.periodStart) await refundGeneration(c.env.DB, auth.userId, booked.periodStart);
+    throw error;
+  }
 
   await audit(c, {
     action: 'lesson.student_note_generated', entityType: 'lesson', entityId: id,
@@ -320,6 +349,7 @@ lessonRoutes.post('/:id/generate-student-notes', requirePermission('teacher.self
   return ok(c, {
     noteId: result.noteId, version: result.version, kind: 'STUDENT_NOTE',
     usage: result.usage,
+    allowance: { remaining: booked.quotaRemaining, limit: booked.quotaLimit, periodEnd: booked.periodEnd },
   }, 201);
 });
 

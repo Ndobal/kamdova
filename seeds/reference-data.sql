@@ -90,7 +90,12 @@ INSERT OR IGNORE INTO permissions (id, code, name, description, category, is_sen
   ('perm_self_lessons_r',    'teacher.self.lessons.read',    'View own lessons',           'View own lessons and notes.',           'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   ('perm_self_lessons_w',    'teacher.self.lessons.write',   'Create and edit own lessons','Create, edit and delete own lessons.',  'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   ('perm_self_lessons_gen',  'teacher.self.lessons.generate','Generate lesson content',    'Use AI to generate notes. Costs money per call.', 'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  ('perm_self_lessons_pub',  'teacher.self.lessons.publish', 'Publish and share notes',    'Publish notes and create share links.', 'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now'));
+  ('perm_self_lessons_pub',  'teacher.self.lessons.publish', 'Publish and share notes',    'Publish notes and create share links.', 'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  -- NKLearn Marketplace. Buying and claiming a trial are self-scoped; the
+  -- marketplace catalog itself is readable by any signed-in user.
+  ('perm_self_billing_r',    'billing.self.read',    'View own plan',    'View own subscription, allowance and orders.', 'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('perm_self_billing_buy',  'billing.self.purchase','Buy a plan',       'Claim a trial and place orders for plans.',    'TEACHER_SELF', 0, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now'));
 
 -- ------------------------------------------------------ role defaults ----
 -- Rebuilt on every seed run so the catalog above stays the single source of

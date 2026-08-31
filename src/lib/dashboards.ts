@@ -27,7 +27,8 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { key: 'partners',   label: 'Partners',              icon: 'handshake',  route: '/admin/partners',   permissions: ['partners.read'] },
   { key: 'agreements', label: 'Partnership Agreements',icon: 'gavel',      route: '/admin/agreements', permissions: ['agreements.read'] },
   { key: 'revenue',    label: 'Revenue',               icon: 'trending_up',route: '/admin/revenue',    permissions: ['revenue.read'] },
-  { key: 'pricing',    label: 'Pricing',               icon: 'sell',       route: '/admin/pricing',    permissions: ['pricing.manage'] },
+  { key: 'pricing',    label: 'Plans & Pricing',       icon: 'sell',       route: '/admin/pricing',    permissions: ['pricing.manage'] },
+  { key: 'subs',       label: 'Subscriptions',         icon: 'card_membership', route: '/admin/subscriptions', permissions: ['revenue.read', 'payments.read'] },
   { key: 'payments',   label: 'Payments',              icon: 'payments',   route: '/admin/payments',   permissions: ['payments.read'] },
   { key: 'reports',    label: 'Reports',               icon: 'bar_chart',  route: '/admin/reports',    permissions: ['reports.read', 'reports.financial.read'] },
   { key: 'approvals',  label: 'Approvals',             icon: 'task_alt',   route: '/admin/approvals',  permissions: ['approvals.read'] },
@@ -62,6 +63,7 @@ const TEACHER_NAV: NavItem[] = [
   { key: 'create',    label: 'Create Lesson',  icon: 'add_circle',  route: '/teacher/lessons/new', permissions: ['teacher.self.lessons.write'] },
   { key: 'notes',     label: 'Student Notes',  icon: 'description', route: '/teacher/student-notes', permissions: ['teacher.self.lessons.read'] },
   { key: 'templates', label: 'Templates',      icon: 'dashboard_customize', route: '/teacher/templates', permissions: ['templates.read'] },
+  { key: 'plans',     label: 'Plans & Billing',icon: 'shopping_cart', route: '/teacher/plans' },
   { key: 'profile',   label: 'Profile',        icon: 'person',      route: '/teacher/profile',   permissions: ['teacher.self.profile.read'] },
 ];
 

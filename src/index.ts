@@ -14,6 +14,7 @@ import { adminAuditRoutes } from './routes/admin/audit';
 import { adminRoleRoutes } from './routes/admin/roles';
 import { adminSettingsRoutes } from './routes/admin/settings';
 import { adminUserRoutes } from './routes/admin/users';
+import { adminBillingRoutes, billingRoutes, marketplaceRoutes } from './routes/billing';
 import { lessonRoutes } from './routes/lessons';
 import { noteRoutes } from './routes/notes';
 import { publicRoutes } from './routes/public';
@@ -81,6 +82,8 @@ app.use('/api/lessons/*', requireAuth);
 app.use('/api/notes/*', requireAuth);
 app.use('/api/templates/*', requireAuth);
 app.use('/api/reference/*', requireAuth);
+app.use('/api/billing/*', requireAuth);
+app.use('/api/marketplace/*', requireAuth);
 
 app.route('/api/admin/users', adminUserRoutes);
 app.route('/api/admin/roles', adminRoleRoutes);
@@ -95,6 +98,9 @@ app.route('/api/lessons', lessonRoutes);
 app.route('/api/notes', noteRoutes);
 app.route('/api/templates', templateRoutes);
 app.route('/api/reference', referenceRoutes);
+app.route('/api/billing', billingRoutes);
+app.route('/api/marketplace', marketplaceRoutes);
+app.route('/api/admin/billing', adminBillingRoutes);
 
 app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'No such endpoint.' } }, 404));
 
