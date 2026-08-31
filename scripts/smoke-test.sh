@@ -100,7 +100,7 @@ for P in "$P_A" "$P_B" "$P_C"; do
   post POST /api/admin/users "$ADMIN" "{\"email\":\"p$i@teacheasy.ng\",\"password\":\"PartnerPass123!\",\"firstName\":\"Partner\",\"lastName\":\"$i\",\"roles\":[\"PARTNER\"]}" >/dev/null
   PUSER=$(j 'o.data.id' < /tmp/body)
   post PATCH "/api/partners/$P" "$ADMIN" "{}" >/dev/null
-  npx --yes wrangler d1 execute teacheasy-db --local --command \
+  npx --yes wrangler d1 execute kamdova-db --local --command \
     "UPDATE partners SET user_id='$PUSER', status='ACTIVE' WHERE id='$P'" >/dev/null 2>&1
   post POST /api/auth/login "" "{\"email\":\"p$i@teacheasy.ng\",\"password\":\"PartnerPass123!\"}" >/dev/null
   eval "T_$i=$(j 'o.data.tokens.accessToken' < /tmp/body)"
@@ -206,7 +206,7 @@ post POST /api/auth/login "" '{"email":"p1@teacheasy.ng","password":"PartnerPass
 VICTIM=$(j 'o.data.tokens.accessToken' < /tmp/body)
 check "token works before suspension" "$(get /api/me "$VICTIM")" "200"
 
-P1_USER=$(npx --yes wrangler d1 execute teacheasy-db --local --json \
+P1_USER=$(npx --yes wrangler d1 execute kamdova-db --local --json \
   --command "SELECT id FROM users WHERE email='p1@teacheasy.ng'" 2>/dev/null | j 'o[0].results[0].id')
 post POST "/api/admin/users/$P1_USER/status" "$ADMIN" '{"status":"SUSPENDED","reason":"smoke test"}' >/dev/null
 check "suspended user's live token stops working" "$(get /api/me "$VICTIM")" "401"

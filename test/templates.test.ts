@@ -128,6 +128,98 @@ describe('validateContent', () => {
   });
 });
 
+describe('completeness (requireNonEmpty)', () => {
+  // Observed with a live Workers AI generation: the model returned every
+  // declared key, but with empty strings. Structurally valid, useless to a
+  // teacher, and it would have published with visible blanks.
+  const withBlanks = {
+    materials: { learningMaterials: '', referenceMaterials: '' },
+    context: { rationale: '', prerequisiteKnowledge: '' },
+    lessonDevelopment: [
+      { step: 'Introduction (5 min)', teacherActivities: 'Asks.', pupilActivities: 'Answer.', learningPoint: 'Recall.' },
+    ],
+  };
+
+  const TEMPLATE_2_FULL: TemplateStructure = {
+    sections: [
+      { key: 'materials', label: 'Materials', type: 'fields', source: 'generated', fields: [
+        { key: 'learningMaterials', label: 'Learning Materials' },
+        { key: 'referenceMaterials', label: 'Reference Materials' },
+      ] },
+      { key: 'context', label: 'Lesson Context', type: 'fields', source: 'generated', fields: [
+        { key: 'rationale', label: 'Rationale' },
+        { key: 'prerequisiteKnowledge', label: 'Prerequisite Knowledge' },
+      ] },
+      TEMPLATE_2.sections[1]!,
+    ],
+  };
+
+  it('accepts blanks when only structure is required', () => {
+    // Generation stores what came back: the note is still mostly useful, and
+    // discarding it would cost the teacher a lesson plan from their allowance.
+    expect(() => validateContent(TEMPLATE_2_FULL, withBlanks, { requireGenerated: true })).not.toThrow();
+  });
+
+  it('refuses to publish a note with blank sections', () => {
+    expect(() =>
+      validateContent(TEMPLATE_2_FULL, withBlanks, { requireGenerated: true, requireNonEmpty: true }),
+    ).toThrow();
+  });
+
+  it('names each blank field, not just the section', () => {
+    try {
+      validateContent(TEMPLATE_2_FULL, withBlanks, { requireNonEmpty: true });
+      throw new Error('should have thrown');
+    } catch (error) {
+      const blanks = (error as { details?: { blanks?: string[] } }).details?.blanks ?? [];
+      // Field labels, so the app can point at the actual inputs.
+      expect(blanks).toEqual([
+        'Learning Materials', 'Reference Materials', 'Rationale', 'Prerequisite Knowledge',
+      ]);
+    }
+  });
+
+  it('passes once the blanks are filled', () => {
+    const filled = {
+      ...withBlanks,
+      materials: { learningMaterials: 'Charts, flashcards.', referenceMaterials: 'Basic Technology Book 3.' },
+      context: { rationale: 'Introduces booting.', prerequisiteKnowledge: 'Pupils can switch on a TV.' },
+    };
+    expect(() =>
+      validateContent(TEMPLATE_2_FULL, filled, { requireGenerated: true, requireNonEmpty: true }),
+    ).not.toThrow();
+  });
+
+  it('treats whitespace as blank', () => {
+    const whitespace = { ...withBlanks, context: { rationale: '   ', prerequisiteKnowledge: '\n' } };
+    expect(() => validateContent(TEMPLATE_2_FULL, whitespace, { requireNonEmpty: true })).toThrow();
+  });
+
+  it('lets an optional section stay empty', () => {
+    const structure: TemplateStructure = {
+      sections: [
+        { key: 'summary', label: 'Summary', type: 'text', source: 'generated' },
+        { key: 'assignment', label: 'Assignment', type: 'text', source: 'generated', optional: true },
+      ],
+    };
+    expect(() =>
+      validateContent(structure, { summary: 'Done.', assignment: '' }, { requireNonEmpty: true }),
+    ).not.toThrow();
+  });
+
+  it('does not demand values for teacher-supplied header fields', () => {
+    // A teacher who left School blank has not made the note unpublishable.
+    expect(() =>
+      validateContent(TEMPLATE_1, {
+        header: { school: '', subject: 'Basic Science', topic: 'Booting' },
+        learningObjectives: ['State what booting means'],
+        previousKnowledge: 'Known.',
+        presentation: [{ label: 'STEP 1', teacherActivities: 'Explains.', studentActivities: 'Listen.' }],
+      }, { requireNonEmpty: true }),
+    ).not.toThrow();
+  });
+});
+
 describe('applyInputSections', () => {
   it('overwrites header fields from the lesson, not from the model', () => {
     // The model tried to set its own school and topic; the teacher's values win.

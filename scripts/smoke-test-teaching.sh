@@ -16,7 +16,7 @@ ck() { if [ "$2" = "$3" ]; then printf '  \033[32mPASS\033[0m %s\n' "$1"; PASS=$
        else printf '  \033[31mFAIL\033[0m %s (got %s want %s)\n' "$1" "$2" "$3"; FAIL=$((FAIL+1)); fi; }
 post() { curl -s -o /tmp/b -w '%{http_code}' -X "$1" "$BASE$2" -H 'Content-Type: application/json' ${3:+-H "Authorization: Bearer $3"} ${4:+-d "$4"}; }
 get()  { curl -s -o /tmp/b -w '%{http_code}' "$BASE$1" ${2:+-H "Authorization: Bearer $2"}; }
-d1()   { npx --yes wrangler d1 execute teacheasy-db --local --json --command "$1" 2>/dev/null; }
+d1()   { npx --yes wrangler d1 execute kamdova-db --local --json --command "$1" 2>/dev/null; }
 
 post POST /api/bootstrap/super-admin "" '{"email":"a@t.ng","password":"SuperSecret123!","firstName":"Ada","lastName":"O"}' >/dev/null
 post POST /api/auth/login "" '{"email":"a@t.ng","password":"SuperSecret123!"}' >/dev/null
@@ -77,24 +77,37 @@ ck "owner sees their own two" "$(j 'o.data.length' </tmp/b)" "2"
 ck "reviewer with content.read may read" "$(get /api/lessons/$L "$AD")" "200"
 
 echo "== Billing gates before the AI is ever called =="
-# Correct order: no plan means no provider call, so no spend. Only once the
-# teacher is entitled does the missing-API-key path come into play.
+# Correct order: no plan means no provider call, so no spend at all.
 ck "no plan means no generation" "$(post POST /api/lessons/$L/generate "$T" '{}')" "403"
 post POST /api/billing/trial "$T" '{"deviceId":"teach-test-device","platform":"ANDROID"}' >/dev/null
 
-echo "== Generation degrades cleanly with no API key =="
-ck "generate returns 422, not a crash" "$(post POST /api/lessons/$L/generate "$T" '{}')" "422"
-ck "and names the missing secret" "$(j 'o.error.message.includes("ANTHROPIC_API_KEY")' </tmp/b)" "true"
-get /api/lessons/$L "$T" >/dev/null
-ck "lesson is not left stuck in GENERATING" "$(j 'o.data.status' </tmp/b)" "DRAFT"
+# A live generation calls Workers AI, which bills the Cloudflare account even in
+# local dev and takes ~20s. Opt in with RUN_AI=1; skipped by default so the
+# suite stays fast and free to run.
+if [ "${RUN_AI:-0}" = "1" ]; then
+  echo "== AI generation (live Workers AI call) =="
+  ck "generation succeeds" "$(post POST /api/lessons/$L/generate "$T" '{}')" "201"
+  ck "a note version is returned" "$(j 'o.data.version' </tmp/b)" "1"
+  ck "the allowance was decremented" "$(j 'o.data.allowance.remaining' </tmp/b)" "4"
+  get /api/lessons/$L "$T" >/dev/null
+  ck "lesson is READY afterwards" "$(j 'o.data.status' </tmp/b)" "READY"
+  ck "a teacher note now exists" "$(j 'o.data.teacherNotes.length' </tmp/b)" "1"
+  NOTE_ID=$(j 'o.data.teacherNotes[0].id' </tmp/b)
+  get /api/notes/teacher/$NOTE_ID "$T" >/dev/null
+  ck "the note renders into blocks" "$(j 'o.data.blocks.length>=6' </tmp/b)" "true"
+  ck "objectives came back as a list" "$(j 'Array.isArray(o.data.content.learningObjectives)' </tmp/b)" "true"
+else
+  echo "== AI generation (skipped -- set RUN_AI=1 to spend neurons) =="
+fi
 
 echo "== Module 6: student notes =="
 TPL=$(d1 "SELECT id FROM lesson_templates WHERE code='STUDENT_STANDARD'" | j 'o[0].results[0].id')
 SN=$(node -e "console.log(crypto.randomUUID())")
 # Seeded through a helper script -- see scripts/seed-test-note.mjs for why.
 node scripts/seed-test-note.mjs "$SN" "$L" "$TPL" scripts/.tmp-seed-note.sql
-npx --yes wrangler d1 execute teacheasy-db --local --file=scripts/.tmp-seed-note.sql >/dev/null 2>&1
+npx --yes wrangler d1 execute kamdova-db --local --file=scripts/.tmp-seed-note.sql >/dev/null 2>&1 || true
 rm -f scripts/.tmp-seed-note.sql
+ck "precondition: the student note was seeded" "$(d1 "SELECT COUNT(*) AS n FROM student_notes WHERE id='$SN'" | j 'o[0].results[0].n')" "1"
 
 get /api/notes/student/$SN "$T" >/dev/null
 ck "teacher reads their student note" "$(j 'o.data.status' </tmp/b)" "DRAFT"

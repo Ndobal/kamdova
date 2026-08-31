@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KamDova — Create. Teach. Learn. Earn.</title>
+<meta name="description" content="KamDova gives teachers intelligent tools to plan, create, organise, publish and share educational content. A joint initiative of Ndovera and Kambi Academy.">
+<!--
+  Placeholder holding page for the Pages project root.
+
+  The Flutter web build replaces the contents of public/ at deploy time. Pages
+  serves a matching static file before it reaches a Function, so whatever lands
+  here wins for its own paths and everything else falls through to the Hono app
+  in functions/[[path]].ts.
+-->
+<style>
+  :root {
+    --ink: #10202e; --muted: #55697c; --line: #dfe5ec;
+    --bg: #f6f8fa; --card: #ffffff; --accent: #1f5f8b; --accent-soft: #eaf2f8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8eef4; --muted: #9aabbc; --line: #26374a;
+      --bg: #0d151d; --card: #131f2a; --accent: #6fb1dc; --accent-soft: #16293a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+  header { padding: 72px 0 40px; text-align: center; }
+  .mark {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 30px; font-weight: 700; letter-spacing: -0.02em;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+  .tagline {
+    margin: 14px 0 0; font-size: 19px; color: var(--accent); font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .strap { margin: 8px 0 0; color: var(--muted); font-size: 17px; }
+  .lede {
+    max-width: 640px; margin: 26px auto 0; color: var(--muted); font-size: 16.5px;
+  }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px; padding: 8px 0 40px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px 20px 22px;
+  }
+  .card h2 {
+    margin: 0 0 10px; font-size: 12px; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--accent);
+  }
+  .card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14.5px; }
+  .card li { margin-bottom: 5px; }
+  .status {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    padding: 0 0 44px;
+  }
+  .pill {
+    background: var(--accent-soft); color: var(--accent); border-radius: 999px;
+    padding: 6px 14px; font-size: 13px; font-weight: 600;
+  }
+  footer {
+    border-top: 1px solid var(--line); padding: 26px 0 60px;
+    text-align: center; color: var(--muted); font-size: 14px;
+  }
+  footer strong { color: var(--ink); }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="mark"><span class="dot"></span>KamDova</div>
+      <p class="tagline">Create. Teach. Learn. Earn.</p>
+      <p class="strap">Empowering Teachers. Enriching Learning.</p>
+      <p class="lede">
+        KamDova gives teachers intelligent tools to plan, create, organise, publish
+        and share educational content — so they spend less time on repetitive
+        preparation and more time teaching.
+      </p>
+    </header>
+
+    <div class="status">
+      <span class="pill">API live</span>
+      <span class="pill">App coming soon</span>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Teacher</h2>
+        <ul>
+          <li>AI Lesson Planner</li>
+          <li>Lesson Templates</li>
+          <li>Student Notes</li>
+          <li>Quiz Generator</li>
+          <li>Assignments</li>
+          <li>Resource Creation</li>
+          <li>Publish</li>
+          <li>Earn</li>
+        </ul>
+      </section>
+      <section class="card">
+        <h2>Student</h2>
+        <ul>
+          <li>Access Teacher Content</li>
+          <li>Student Notes</li>
+          <li>Quizzes</li>
+          <li>Practice</li>
+          <li>Discover Other Teachers</li>
+          <li>Purchase Content</li>
+        </ul>
+      </section>
+      <section class="card">
+        <h2>Marketplace</h2>
+        <ul>
+          <li>Free Content</li>
+          <li>Paid Content</li>
+          <li>Teacher Profiles</li>
+          <li>Content Discovery</li>
+        </ul>
+      </section>
+      <section class="card">
+        <h2>Partnership</h2>
+        <ul>
+          <li>Ndovera</li>
+          <li>Kambi Academy</li>
+          <li>Revenue Sharing</li>
+          <li>Pricing</li>
+          <li>Agreements</li>
+        </ul>
+      </section>
+    </div>
+
+    <footer>
+      A joint initiative of <strong>Ndovera</strong> and <strong>Kambi Academy</strong>.<br>
+      KamDova is not designed to replace teachers. It is designed to empower them.
+    </footer>
+  </div>
+</body>
+</html>

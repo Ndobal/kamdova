@@ -16,10 +16,15 @@ export interface EnvBindings {
   MAX_FAILED_LOGINS: string;
   ACCOUNT_LOCK_MINUTES: string;
 
-  // Modules 4-6. AI generation degrades to a clear 422 when the key is absent
-  // rather than failing at the provider, so a deployment without it still runs.
-  ANTHROPIC_API_KEY?: string;
+  /** Workers AI. Inference runs on this binding, with no external call. */
+  AI?: Ai;
+  /** "workers-ai" (default) or "anthropic". */
+  AI_PROVIDER?: string;
   AI_MODEL?: string;
+  /** Estimated ledger cost for Workers AI, which bills in neurons not tokens. */
+  AI_KOBO_PER_1K_TOKENS?: string;
+  /** Only needed when AI_PROVIDER is "anthropic". */
+  ANTHROPIC_API_KEY?: string;
   USD_TO_NGN?: string;
   /** Origin used to build share links; falls back to the request origin. */
   PUBLIC_BASE_URL?: string;

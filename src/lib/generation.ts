@@ -1,5 +1,5 @@
 import type { EnvBindings } from '../types';
-import { createGenerator } from './ai/claude';
+import { createGenerator, generatorUnavailableReason } from './ai';
 import { GenerationError } from './ai/provider';
 import { newId } from './crypto';
 import { conflict, unprocessable } from './http';
@@ -163,11 +163,7 @@ interface GenerateOptions {
  * would be wrong, and would leave them staring at an error they cannot fix.
  */
 function assertGeneratorConfigured(env: EnvBindings) {
-  if (!createGenerator(env)) {
-    throw unprocessable(
-      'AI generation is not configured on this deployment. Set the ANTHROPIC_API_KEY secret.',
-    );
-  }
+  if (!createGenerator(env)) throw unprocessable(generatorUnavailableReason(env));
 }
 
 async function runGeneration(

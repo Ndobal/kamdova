@@ -1,19 +1,30 @@
-name = "teacheasy"
-main = "src/index.ts"
+name = "kamdova"
 compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Pages project. Static assets are served from here first; anything
+# that does not match a file falls through to functions/[[path]].ts, which is
+# the Hono app. One origin for the Flutter web build and the API together.
+pages_build_output_dir = "public"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "teacheasy-db"
+database_name = "kamdova-db"
 database_id = "__D1_DB_ID__"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
 binding = "R2"
-bucket_name = "teacheasy-files"
+bucket_name = "kamdova-files"
 
-# Non-secret defaults. Secrets (JWT_ACCESS_SECRET, JWT_REFRESH_SECRET) come from
-# .dev.vars locally and `wrangler secret put` in production -- never from here.
+# Workers AI. Inference runs on the binding, so there is no external API call,
+# no third-party key, and no egress.
+[ai]
+binding = "AI"
+
+# Non-secret defaults. Secrets (JWT_ACCESS_SECRET, JWT_REFRESH_SECRET,
+# DEVICE_HASH_SECRET, and ANTHROPIC_API_KEY only if AI_PROVIDER = "anthropic")
+# come from .dev.vars locally and `wrangler pages secret put` in production.
 [vars]
 ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:5173"
@@ -24,13 +35,20 @@ REFRESH_TOKEN_TTL_SECONDS = "2592000"
 PASSWORD_HASH_ITERATIONS = "100000"
 MAX_FAILED_LOGINS = "5"
 ACCOUNT_LOCK_MINUTES = "15"
-AI_MODEL = "claude-opus-5"
-USD_TO_NGN = "1600"
 PUBLIC_BASE_URL = ""
+# workers-ai | anthropic
+AI_PROVIDER = "workers-ai"
+AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+# Workers AI bills in neurons; this converts observed tokens into an estimated
+# ledger cost. Tune it against real neuron spend on the account.
+AI_KOBO_PER_1K_TOKENS = "2"
+USD_TO_NGN = "1600"
 
 [env.production.vars]
 ENVIRONMENT = "production"
-CORS_ORIGIN = "https://teacheasy.pages.dev"
+# The Pages project's own origin, so the app and the API share it.
+CORS_ORIGIN = "https://kamdova.pages.dev"
+PUBLIC_BASE_URL = "https://kamdova.pages.dev"
 COOKIE_SECURE = "true"
 COOKIE_DOMAIN = ""
 ACCESS_TOKEN_TTL_SECONDS = "900"
@@ -38,6 +56,7 @@ REFRESH_TOKEN_TTL_SECONDS = "2592000"
 PASSWORD_HASH_ITERATIONS = "100000"
 MAX_FAILED_LOGINS = "5"
 ACCOUNT_LOCK_MINUTES = "15"
-AI_MODEL = "claude-opus-5"
+AI_PROVIDER = "workers-ai"
+AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+AI_KOBO_PER_1K_TOKENS = "2"
 USD_TO_NGN = "1600"
-PUBLIC_BASE_URL = ""

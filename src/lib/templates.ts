@@ -165,7 +165,10 @@ export function buildOutputSchema(structure: TemplateStructure): JsonSchema {
 function sectionSchema(section: TemplateSection): JsonSchema {
   switch (section.type) {
     case 'text':
-      return { type: 'string', description: describe(section) };
+      // minLength tells the model the field is not optional. A nudge, not a
+      // guarantee -- smaller models still return "" -- so completeness is
+      // enforced again at publish.
+      return { type: 'string', minLength: 1, description: describe(section) };
 
     case 'list':
       return {
@@ -181,7 +184,7 @@ function sectionSchema(section: TemplateSection): JsonSchema {
       const required: string[] = [];
       for (const field of section.fields) {
         if (field.source === 'input') continue;
-        properties[field.key] = { type: 'string', description: field.hint ?? field.label };
+        properties[field.key] = { type: 'string', minLength: 1, description: field.hint ?? field.label };
         required.push(field.key);
       }
       return { type: 'object', description: describe(section), properties, required, additionalProperties: false };
@@ -191,7 +194,7 @@ function sectionSchema(section: TemplateSection): JsonSchema {
       const properties: Record<string, JsonSchema> = { label: { type: 'string', description: `e.g. "${section.stepLabel} 1"` } };
       const required: string[] = ['label'];
       for (const field of section.fields) {
-        properties[field.key] = { type: 'string', description: field.hint ?? field.label };
+        properties[field.key] = { type: 'string', minLength: 1, description: field.hint ?? field.label };
         required.push(field.key);
       }
       return {
@@ -238,17 +241,31 @@ export type NoteContent = Record<string, unknown>;
 /**
  * Validates note content against the template.
  *
- * Runs on model output AND on teacher edits. Strict tool use makes malformed
- * model output unlikely, but "unlikely" is not a guarantee, and a teacher
- * PATCHing the content field is plain untrusted input. Zero trust applies to
- * the model's output exactly as it does to a request body.
+ * Runs on model output AND on teacher edits. A schema constrains the model but
+ * does not bind it -- observed in practice: a model returning every declared
+ * key with an empty string. And a teacher PATCHing content is plain untrusted
+ * input. Zero trust applies to the model output exactly as to a request body.
+ *
+ * Two separate questions, deliberately asked at different moments:
+ *
+ *   requireGenerated  is every generated section PRESENT and well-shaped?
+ *                     Checked when storing a generation, because a note
+ *                     missing a whole section cannot be rendered at all.
+ *
+ *   requireNonEmpty   is every generated section actually FILLED IN?
+ *                     Checked at publish, NOT at generation. A note with two
+ *                     blank fields is still 90% useful, and discarding it
+ *                     would burn a 20-second wait and one lesson plan from the
+ *                     allowance. Far better to hand it over, let the teacher
+ *                     type the two fields, and stop it reaching pupils until
+ *                     they have.
  *
  * Returns the cleaned content with unknown keys dropped.
  */
 export function validateContent(
   structure: TemplateStructure,
   content: unknown,
-  opts: { requireGenerated?: boolean } = {},
+  opts: { requireGenerated?: boolean; requireNonEmpty?: boolean } = {},
 ): NoteContent {
   if (!content || typeof content !== 'object' || Array.isArray(content)) {
     throw badRequest('Note content must be an object.');
@@ -256,6 +273,7 @@ export function validateContent(
   const input = content as Record<string, unknown>;
   const clean: NoteContent = {};
   const problems: string[] = [];
+  const blanks: string[] = [];
 
   for (const section of structure.sections) {
     const value = input[section.key];
@@ -268,19 +286,30 @@ export function validateContent(
       continue;
     }
 
-    switch (section.type) {
-      case 'text':
-        if (typeof value !== 'string') problems.push(`"${section.key}" must be text.`);
-        else clean[section.key] = value.trim();
-        break;
+    const mustBeFilled = opts.requireNonEmpty && section.source === 'generated' && !section.optional;
 
-      case 'list':
+    switch (section.type) {
+      case 'text': {
+        if (typeof value !== 'string') {
+          problems.push(`"${section.key}" must be text.`);
+          break;
+        }
+        const text = value.trim();
+        if (mustBeFilled && text === '') blanks.push(section.label);
+        clean[section.key] = text;
+        break;
+      }
+
+      case 'list': {
         if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
           problems.push(`"${section.key}" must be a list of text items.`);
-        } else {
-          clean[section.key] = (value as string[]).map((item) => item.trim()).filter(Boolean);
+          break;
         }
+        const items = (value as string[]).map((item) => item.trim()).filter(Boolean);
+        if (mustBeFilled && items.length === 0) blanks.push(section.label);
+        clean[section.key] = items;
         break;
+      }
 
       case 'fields': {
         if (typeof value !== 'object' || Array.isArray(value)) {
@@ -292,6 +321,14 @@ export function validateContent(
         for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
           if (!allowed.has(key)) continue; // drop keys the template does not declare
           out[key] = typeof raw === 'string' ? raw.trim() : String(raw ?? '');
+        }
+        if (mustBeFilled) {
+          // Reported per FIELD, not per section: "Lesson Context is blank" is
+          // far less actionable than "Rationale is blank".
+          for (const field of section.fields) {
+            if (field.source === 'input') continue;
+            if (!out[field.key]) blanks.push(field.label);
+          }
         }
         clean[section.key] = out;
         break;
@@ -321,6 +358,7 @@ export function validateContent(
           }
           rows.push(row);
         }
+        if (mustBeFilled && rows.length === 0) blanks.push(section.label);
         clean[section.key] = rows;
         break;
       }
@@ -329,6 +367,12 @@ export function validateContent(
 
   if (problems.length > 0) {
     throw unprocessable('The note content does not match its template.', { problems });
+  }
+  if (blanks.length > 0) {
+    throw unprocessable(
+      `Fill in ${blanks.length === 1 ? 'this section' : 'these sections'} before publishing: ${blanks.join(', ')}.`,
+      { blanks },
+    );
   }
   return clean;
 }

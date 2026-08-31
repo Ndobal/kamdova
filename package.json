@@ -5,16 +5,17 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "dev": "wrangler pages dev",
+    "deploy": "wrangler pages deploy --project-name=kamdova",
     "typecheck": "tsc --noEmit",
-    "db:create": "wrangler d1 create teacheasy-db",
-    "db:migrate": "wrangler d1 migrations apply teacheasy-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply teacheasy-db --remote",
-    "db:seed": "wrangler d1 execute teacheasy-db --local --file=./seeds/reference-data.sql && wrangler d1 execute teacheasy-db --local --file=./seeds/teaching-reference.sql && wrangler d1 execute teacheasy-db --local --file=./seeds/commerce-reference.sql && wrangler d1 execute teacheasy-db --local --file=./seeds/brand-reference.sql",
-    "db:seed:remote": "wrangler d1 execute teacheasy-db --remote --file=./seeds/reference-data.sql && wrangler d1 execute teacheasy-db --remote --file=./seeds/teaching-reference.sql && wrangler d1 execute teacheasy-db --remote --file=./seeds/commerce-reference.sql && wrangler d1 execute teacheasy-db --remote --file=./seeds/brand-reference.sql",
+    "db:create": "wrangler d1 create kamdova-db",
+    "db:migrate": "wrangler d1 migrations apply kamdova-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply kamdova-db --remote",
+    "db:seed": "wrangler d1 execute kamdova-db --local --file=./seeds/reference-data.sql && wrangler d1 execute kamdova-db --local --file=./seeds/teaching-reference.sql && wrangler d1 execute kamdova-db --local --file=./seeds/commerce-reference.sql && wrangler d1 execute kamdova-db --local --file=./seeds/brand-reference.sql",
+    "db:seed:remote": "wrangler d1 execute kamdova-db --remote --file=./seeds/reference-data.sql && wrangler d1 execute kamdova-db --remote --file=./seeds/teaching-reference.sql && wrangler d1 execute kamdova-db --remote --file=./seeds/commerce-reference.sql && wrangler d1 execute kamdova-db --remote --file=./seeds/brand-reference.sql",
     "db:reset": "rm -rf .wrangler/state/v3/d1 && npm run db:migrate && npm run db:seed",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:all": "bash scripts/test-all.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

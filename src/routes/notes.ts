@@ -149,9 +149,12 @@ noteRoutes.post('/:kind/:id/publish', requirePermission('teacher.self.lessons.pu
   if (note.status === 'PUBLISHED') return ok(c, { id: note.id, status: 'PUBLISHED', alreadyPublished: true });
   if (note.status !== 'DRAFT') throw conflict(`A ${note.status.toLowerCase()} note cannot be published.`);
 
-  // Every generated section must be present and well-formed before this goes
-  // anywhere a pupil can read it.
-  validateContent(structure, JSON.parse(note.content), { requireGenerated: true });
+  // Present, well-formed AND actually filled in before this reaches a pupil.
+  // Blanks come back named so the app can point the teacher straight at them.
+  validateContent(structure, JSON.parse(note.content), {
+    requireGenerated: true,
+    requireNonEmpty: true,
+  });
 
   await c.env.DB.batch([
     // Only one published version at a time; the previous one is superseded.

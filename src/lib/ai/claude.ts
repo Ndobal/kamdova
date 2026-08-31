@@ -133,9 +133,3 @@ export class ClaudeGenerator implements StructuredGenerator {
     };
   }
 }
-
-/** Returns null when AI is not configured, so callers can degrade rather than crash. */
-export function createGenerator(env: EnvBindings): ClaudeGenerator | null {
-  if (!env.ANTHROPIC_API_KEY) return null;
-  return new ClaudeGenerator(env);
-}

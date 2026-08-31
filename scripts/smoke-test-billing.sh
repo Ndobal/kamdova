@@ -15,7 +15,7 @@ ck() { if [ "$2" = "$3" ]; then printf '  \033[32mPASS\033[0m %s\n' "$1"; PASS=$
        else printf '  \033[31mFAIL\033[0m %s (got %s want %s)\n' "$1" "$2" "$3"; FAIL=$((FAIL+1)); fi; }
 post() { curl -s -o /tmp/b -w '%{http_code}' -X "$1" "$BASE$2" -H 'Content-Type: application/json' ${3:+-H "Authorization: Bearer $3"} ${4:+-d "$4"}; }
 get()  { curl -s -o /tmp/b -w '%{http_code}' "$BASE$1" ${2:+-H "Authorization: Bearer $2"}; }
-d1()   { npx --yes wrangler d1 execute teacheasy-db --local --json --command "$1" 2>/dev/null; }
+d1()   { npx --yes wrangler d1 execute kamdova-db --local --json --command "$1" 2>/dev/null; }
 
 mkteacher() { # mkteacher <email> -> echoes the access token
   post POST /api/admin/users "$AD" "{\"email\":\"$1\",\"password\":\"TeacherPass123!\",\"firstName\":\"T\",\"lastName\":\"X\",\"roles\":[\"TEACHER\"]}" >/dev/null
@@ -99,9 +99,14 @@ get "/api/admin/billing/trial-attempts" "$AD" >/dev/null
 ck "device refusals are counted" "$(j 'o.data.breakdown.find(b=>b.outcome==="DEVICE_ALREADY_CLAIMED").attempts>=1' </tmp/b)" "true"
 
 echo "== Quota is enforced =="
-ck "generation now passes the gate" "$(post POST /api/lessons/$L1/generate "$T1" '{}')" "422"
-get /api/billing/me "$T1" >/dev/null
-ck "a failed generation is refunded" "$(j 'o.data.entitlement.quotaUsed' </tmp/b)" "0"
+if [ "${RUN_AI:-0}" = "1" ]; then
+  ck "generation now passes the gate" "$(post POST /api/lessons/$L1/generate "$T1" '{}')" "201"
+  get /api/billing/me "$T1" >/dev/null
+  ck "a successful generation consumes one slot" "$(j 'o.data.entitlement.quotaUsed' </tmp/b)" "1"
+  ck "four of five remain" "$(j 'o.data.entitlement.quotaRemaining' </tmp/b)" "4"
+else
+  echo "  (live generation skipped -- set RUN_AI=1 to spend neurons)"
+fi
 
 # Burn the allowance to test the ceiling without spending real tokens. The
 # counter row already exists (the refund cycle above created it), so this is an

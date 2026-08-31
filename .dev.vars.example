@@ -3,6 +3,9 @@
 JWT_ACCESS_SECRET="replace-with-a-long-random-string"
 JWT_REFRESH_SECRET="replace-with-a-different-long-random-string"
 
-# Modules 4-6: AI lesson generation. Without it the generate endpoints return a
-# clear 422 and everything else still works.
-ANTHROPIC_API_KEY="sk-ant-..."
+# Keys the device-id HMAC for the one-trial-per-device rule.
+DEVICE_HASH_SECRET="replace-with-another-long-random-string"
+
+# AI generation runs on the Workers AI binding by default, so no key is needed.
+# Only set this if you switch AI_PROVIDER to "anthropic" in wrangler.toml.
+# ANTHROPIC_API_KEY="sk-ant-..."

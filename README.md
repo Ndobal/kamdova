@@ -3,13 +3,15 @@
 **Create. Teach. Learn. Earn.**
 *A joint initiative of Ndovera and Kambi Academy.*
 
-Backend for KamDova: identity, permissions, AI lesson planning, student notes,
-subscriptions, and the partnership revenue ledger. Cloudflare Workers + Hono +
-D1, TypeScript. The client is a Flutter app.
+KamDova on Cloudflare: identity, permissions, AI lesson planning, student notes,
+subscriptions, and the partnership revenue ledger.
 
-> The repository and the Worker are still named `teacheasy` from the original
-> project. Renaming them is a separate, outward-facing change — say the word and
-> I'll rename the GitHub repo, the Worker and the D1 database together.
+**Cloudflare Pages** (`kamdova.pages.dev`) serving the Flutter web build as
+static assets, with the Hono API running as a Pages Function on the same origin.
+**D1** for data, **R2** for files, **Workers AI** for generation.
+
+> The GitHub repository is still named `teacheasy`. Renaming it changes the URL,
+> so it is left alone until you ask.
 
 ---
 
@@ -43,8 +45,12 @@ npm install
 cp .dev.vars.example .dev.vars        # then put real random secrets in it
 npm run db:migrate                    # schema
 npm run db:seed                       # roles, permissions, templates, plans, brand
-npm run dev                           # http://127.0.0.1:8787
+npm run dev                           # wrangler pages dev -> http://127.0.0.1:8787
 ```
+
+`/` serves the static landing page from `public/`; `/api/*` and `/s/*` go to the
+Hono app. `public/_routes.json` draws that line, so the Function is not even
+invoked for static assets.
 
 Create the first Super Admin (this endpoint closes permanently once one exists):
 
@@ -57,14 +63,19 @@ curl -X POST http://127.0.0.1:8787/api/bootstrap/super-admin \
 Verify:
 
 ```bash
-npm test                                   # 32 unit tests
-bash scripts/smoke-test.sh                 # 44 checks — identity, partnership, admin
-bash scripts/smoke-test-teaching.sh        # 53 checks — templates, lessons, notes, sharing
-bash scripts/smoke-test-billing.sh         # 67 checks — brand, trials, quota, plans
+npm run test:all                # everything, on clean databases, no AI spend
+RUN_AI=1 npm run test:all       # also makes live Workers AI calls
 ```
 
-AI generation needs `ANTHROPIC_API_KEY` in `.dev.vars`. Without it every other
-endpoint works and the generate endpoints return a clear 422.
+| Suite | Checks |
+|---|---|
+| `scripts/smoke-test.sh` | 44 — identity, partnership, administration |
+| `scripts/smoke-test-teaching.sh` | 51 (58 with `RUN_AI=1`) — templates, lessons, notes, sharing |
+| `scripts/smoke-test-billing.sh` | 65 — brand, trials, quota, plans |
+| `npm test` | 39 unit tests — money and template engine |
+
+**Live generation is opt-in.** Workers AI bills the Cloudflare account even in
+local dev, and a call takes ~20s, so the suites skip it unless `RUN_AI=1`.
 
 ---
 
@@ -88,7 +99,7 @@ KamDova
 
 ## Three ideas the design rests on
 
-### 1. The lesson template is data
+### 1. The lesson template is data, and the AI is swappable
 
 A template is an ordered list of sections stored as JSON. Three things read that
 same list: the **generator** derives a JSON Schema from it, the **validator**
@@ -107,6 +118,28 @@ Two templates ship, and they are structurally different:
 
 The section engine supports both through `steps` and `table` section types.
 `GET /api/templates/:code/schema` shows exactly what the AI will be asked to fill.
+
+**Both templates are verified against live Workers AI**, including Template 2's
+four-column grid — the case Cloudflare warns may be refused as "overly complex".
+A generation is roughly 900 tokens and ~20 seconds.
+
+The provider sits behind one interface, so switching is an environment variable:
+
+| `AI_PROVIDER` | Model | Notes |
+|---|---|---|
+| `workers-ai` (default) | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | Runs on the binding: no external key, no egress. Structured output via `response_format: json_schema`. |
+| `anthropic` | `claude-opus-5` | Better prose, and more reliable with large nested schemas. Needs `ANTHROPIC_API_KEY`. |
+
+Only nine Workers AI models support JSON-schema output; an unsupported one is
+rejected at construction rather than failing in front of a teacher.
+
+**A schema constrains the model but does not bind it.** A live Workers AI run
+returned every declared key with an empty string — structurally valid, useless
+to a teacher. So completeness is now a separate check from structure: a
+generation is stored even with blanks (the note is still mostly useful, and
+discarding it would cost the teacher a lesson plan from their allowance), but
+**publishing is refused until they are filled**, with each blank field named so
+the app can point straight at it.
 
 ### 2. The sharing formula is data
 
@@ -327,17 +360,30 @@ enum columns.
 ## Deploying
 
 ```bash
-npx wrangler d1 create teacheasy-db      # put the id in wrangler.toml
-npx wrangler d1 migrations apply teacheasy-db --remote
+npx wrangler login                       # not currently authenticated
+
+npx wrangler d1 create kamdova-db        # put the id in wrangler.toml
+npx wrangler d1 migrations apply kamdova-db --remote
 for f in reference-data teaching-reference commerce-reference brand-reference; do
-  npx wrangler d1 execute teacheasy-db --remote --file=./seeds/$f.sql
+  npx wrangler d1 execute kamdova-db --remote --file=./seeds/$f.sql
 done
-npx wrangler secret put JWT_ACCESS_SECRET
-npx wrangler secret put JWT_REFRESH_SECRET
-npx wrangler secret put DEVICE_HASH_SECRET
-npx wrangler secret put ANTHROPIC_API_KEY
-npx wrangler deploy --env production
+
+npx wrangler pages project create kamdova --production-branch=main
+
+for s in JWT_ACCESS_SECRET JWT_REFRESH_SECRET DEVICE_HASH_SECRET; do
+  npx wrangler pages secret put $s --project-name=kamdova
+done
+
+npm run deploy                           # -> https://kamdova.pages.dev
 ```
+
+The D1, R2 and AI bindings must also be attached to the Pages project (Settings
+→ Functions → Bindings, or through the Pages API). A Pages project does not pick
+those up from `wrangler.toml` the way a Worker does.
+
+**Upgrade wrangler before deploying.** The project is pinned to v3.114.17 and
+everything is tested on it, but v3 is out of date and Cloudflare warns about it.
+`npm i -D wrangler@4` is the right move once you can re-run the suites.
 
 Before going live: set `CORS_ORIGIN` and `PUBLIC_BASE_URL`, confirm
 `COOKIE_SECURE=true`, run the bootstrap once and then remove the

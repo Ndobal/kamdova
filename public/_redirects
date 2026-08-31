@@ -1,0 +1,4 @@
+# SPA fallback for the Flutter web build: deep links resolve to index.html so
+# client-side routing works on a cold load. /api/* and /s/* never reach this
+# layer -- _routes.json hands those to the Function first.
+/*  /index.html  200
